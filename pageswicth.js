@@ -4,7 +4,7 @@
 	}
 	var PageSwich = (function(){
 		function PageSwitch(element,options){
-			this.settings = $.extend(true,$.fn.PageSwich.default,options || {})
+			this.settings = $.extend(true,$.fn.PageSwich.defaults,options || {})
 			this.element = element;
 			this.init();
 		}
@@ -40,13 +40,33 @@
 			switchLength : function(){
                 return this.direction ? this.element.height():this.element.width();
             },
+            /*说明: 向前滑动即上一页面*/
+			prev : function(){
+                var me = this;
+                if (me.index > 0) {
+                    me.index --;
+                }else if(me.settings.loop){
+                    me.index = me.pagesCount - 1;
+                }
+                me._scrollPage(); 
+            },
+            /*说明: 向后滑动即下一页面*/
+			next : function(){
+                var me = this;
+                if (me.index < me.pagesCount) {
+                    me.index ++;
+                }else if (me.settings.loop) {
+                    me.index = 0;
+                }
+                me._scrollPage();
+            },
             /*说明: 主要针对横屏情况进行页面布局*/
 			_initLayout : function(){
                 var me = this;
                 var width = (me.pageCount * 100)+"%",
                     cellWidth = (100/me.pageCount).toFixed(2)+"%";
                 me.sections.width(width);
-                me.section.width(cellWidth).css("float","left");    
+                me.section.width(cellWidth).css("float","left");
             },
             /*说明: 实现分页的dom结构及css样式*/
 			_initPaging : function(){
@@ -69,7 +89,25 @@
                 }
             },
             /*说明: 初始化插件事件*/
-			_initEvent : function(){}
+			_initEvent : function(){
+				var me = this;
+				me.element.on("click",me.selectors.pages + " li",function(){
+					me.index = $(this).index();
+					me._scrollPage();
+				});
+
+				me.element.on("mousewheel DOMMouseScroll", function(e){
+					var delta = e.originalEvent.wheelDelta || -e.originalEvent.detail;
+
+					if (delta > 0 && ((me.index && !me.settings.loop) || me.settings
+					.loop )) {
+						me.prev();
+					}else if (delta < 0 && (me.index < me.pagesCount - 1) && !me
+					.settings.loop || me.settings.loop  vv) {
+						me.next();
+					}
+				})
+			}
 		}
 		return PageSwich;
 	})();
@@ -84,7 +122,7 @@
         if ($.type(options) === "string") return instance[options]();
       });
     };
-    $.fn.PageSwich.default = {
+    $.fn.PageSwich.defaults = {
         selectors : {
             sections : ".sections",
             section : ".section",
@@ -101,6 +139,6 @@
         callback : ""
     }
     $(function(){
-    	$("[data-PageSwitch").PageSwich();  
+    	$("[data-PageSwitch").PageSwich();
     })
 })(jQuery);

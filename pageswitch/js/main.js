@@ -110,8 +110,27 @@
                         }
                     });
                 }
+
+                $(window).resize(function() {
+                    let currentLength = me.switchLength(),
+                        offset = me.settings.direction ? me.section.eq(me.index).offset().top :
+                        me.section.eq(me.index).offset().left;
+                    if (Math.abs(offset) > currentLength / 2 && me.index < (me.pagesCount - 1)) {
+                        me.index++;
+                    }
+                    if (me.index) {
+                        me._scrollPage();
+                    }
+                });
+
+                me.sections.on("transitionend webkitTransitionEnd oTransitionEnd otransitionend", function() {
+                    if (me.setting.callback && $.type(me.settings.callback) == "function") {
+                        me.setting.callback()
+                    }
+                });
             }
-        }
+        };
+        return PageSwitch;
     })();
 
     // 设置PageSwitch原型的函数式

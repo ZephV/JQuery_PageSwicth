@@ -1,17 +1,32 @@
 (function($) {
-    let PageSwitch = (function() {
+    "use strict";
+
+    var _prefix = (function(temp) {
+        var aPrefix = ["webkit", "Moz", "o", "ms"],
+            props = "";
+        for (var i in aPrefix) {
+            props = aPrefix[i] + "Transition";
+            if (temp.style[props] !== undefined) {
+                return "-" + aPrefix[i].toLowerCase() + "-";
+            }
+        }
+        return false;
+    })(document.createElement(PageSwitch));
+
+    var PageSwitch = (function() {
         function PageSwitch(element, options) {
             this.settings = $.extend(true, $.fn.PageSwitch.defaults, options || {});
             this.element = element;
+
             this.init();
         }
+
         PageSwitch.prototype = {
             init: function() {
-                let me = this;
+                var me = this;
                 me.selectors = me.settings.selectors;
-                me.sections = $(me.selectors.sections);
-                me.section = $(me.selectors.section);
-
+                me.sections = me.element.find(me.selectors.sections);
+                me.section = me.element.find(me.selectors.section);
                 me.direction = (me.settings.direction == "vertical" ? true : false);
 
                 me.pagesCount = me.pagesCount();
@@ -28,22 +43,36 @@
                 me._initEvent();
             },
             _scrollPage: function() {
-
+                var me = this,
+                    dest = me.section.eq(me.index).position();
+                if (!dest) return;
+                if (_prefix) {
+                    me.sections.css(_prefix + "transition", "all " + me.settings.duration + "ms " + me.settings.easing);
+                    var translate = me.direction ? "translateY(-" + dest.top + "px)" : "translateX(-" + dest.left + "px)";
+                    me.sections.css(_prefix + "transform", translate);
+                } else {
+                    var animateCss = me.direction ? { top: -dest.top } : { left: -dest.left };
+                    me.sections.animate(animateCss, me.settings.duration, function() {
+                        if (me.settings.callback && $.type(me.settings.callback) == "function") {
+                            me.settings.callback()
+                        }
+                    });
+                }
             },
             prev: function() {
-                let me = this;
+                var me = this;
                 if (me.index > 0) {
                     me.index--;
-                } else if (me.setting.loop) {
+                } else if (me.settings.loop) {
                     me.index = me.pagesCount - 1;
                 }
                 me._scrollPage();
             },
             next: function() {
-                let me = this;
-                if (me.index < 0) {
+                var me = this;
+                if (me.index < me.pagesCount) {
                     me.index++;
-                } else if (me.setting.loop) {
+                } else if (me.settings.loop) {
                     me.index = 0;
                 }
                 me._scrollPage();
@@ -55,23 +84,23 @@
                 return this.direction ? this.element.height() : this.element.width();
             },
             _initLayout: function() {
-                let me = this;
-                let width = (me.pagesCount * 100) + "%",
+                var me = this;
+                var width = (me.pagesCount * 100) + "%",
                     cellWidth = (100 / me.pagesCount).toFixed(2) + "%";
                 me.sections.width(width);
                 me.section.width(cellWidth).css("float", "left");
             },
             _initPaging: function() {
-                let me = this,
-                    pageClass = me.selectors.page.substring(1),
-                    activeClass = me.selectors.active.substring(1);
-                let pageHtml = "<ul class=" + pageClass + ">";
-                for (let i = 0; i < me.pagesCount; i++) {
+                var me = this,
+                    pageClass = me.selectors.page.substring(1);
+                me.activeClass = me.selectors.active.substring(1);
+                var pageHtml = "<ul class=" + pageClass + ">";
+                for (var i = 0; i < me.pagesCount; i++) {
                     pageHtml += "<li></li>";
                 }
                 pageHtml += "</ul>"
                 me.element.append(pageHtml);
-                let pages = $(me.selectors.pages);
+                var pages = $(me.selectors.pages);
                 me.pageItem = pages.find("li");
                 me.pageItem.eq(me.index).addClass(me.activeClass);
 
@@ -83,25 +112,25 @@
             },
 
             _initEvent: function() {
-                let me = this;
+                var me = this;
                 me.element.on("click", me.selectors.pages + " li", function() {
                     me.index = $(this).index();
                     me._scrollPage()
                 });
 
                 me.element.on("mousewheel DOMMouseScroll", function(e) {
-                    let delta = e.originalEvent.wheelDelta || e.originalEvent.delta;
+                    var delta = e.originalEvent.wheelDelta || e.originalEvent.delta;
 
-                    if (delta > 0 && (me.index && !me.settting.loop || me.settting.loop)) {
+                    if (delta > 0 && (me.index && !me.settings.loop || me.settings.loop)) {
                         me.prev();
-                    } else if (delta < 0 && (me.index < (me.pagesCount - 1) && !me.settting.loop || me.settting.loop)) {
+                    } else if (delta < 0 && (me.index < (me.pagesCount - 1) && !me.settings.loop || me.settings.loop)) {
                         me.next();
                     }
                 });
 
-                if (me.setting.keyboard) {
+                if (me.settings.keyboard) {
                     $(window).on("keydown", function(e) {
-                        let keyCode = e.keyCode;
+                        var keyCode = e.keyCode;
                         if (keyCode == 37 || keyCode == 38) {
                             me.prev();
                         }
@@ -112,7 +141,7 @@
                 }
 
                 $(window).resize(function() {
-                    let currentLength = me.switchLength(),
+                    var currentLength = me.switchLength(),
                         offset = me.settings.direction ? me.section.eq(me.index).offset().top :
                         me.section.eq(me.index).offset().left;
                     if (Math.abs(offset) > currentLength / 2 && me.index < (me.pagesCount - 1)) {
@@ -124,8 +153,8 @@
                 });
 
                 me.sections.on("transitionend webkitTransitionEnd oTransitionEnd otransitionend", function() {
-                    if (me.setting.callback && $.type(me.settings.callback) == "function") {
-                        me.setting.callback()
+                    if (me.settings.callback && $.type(me.settings.callback) == "function") {
+                        me.settings.callback()
                     }
                 });
             }
@@ -136,15 +165,17 @@
     // 设置PageSwitch原型的函数式
     $.fn.PageSwitch = function(options) {
         return this.each(function() {
-            let me = $(this),
+            var me = $(this),
                 instance = me.data("PageSwitch");
             if (!instance) {
-                instance = new PageSwitch(me, options);
-                me.data("PageSwitch", instance);
+
+                me.data("PageSwitch", instance = new PageSwitch(me, options))
             }
             if ($.type(options) === "string") return instance[options]();
         });
     }
+
+
 
     // 将默认参数挂在PageSwitch原型的default对象下
     $.fn.PageSwitch.defaults = {
@@ -156,11 +187,16 @@
         },
         index: 0, //页面的索引值
         easing: "ease", //动画效果
-        duration: 500, //页面滑动事件
-        loop: true, //页面是否可以循环播放
+        duration: 1000, //页面滑动事件
+        loop: false, //页面是否可以循环播放
         pageination: true, //是否分页处理
         keyboard: true, //是否触发键盘事件
-        direction: "vertical", //页面是垂直滑动还是水平滑动
+        direction: "horizontal", //页面是垂直滑动还是水平滑动
         callback: "" //回调函数
-    }
+    };
+
+    $(function() {
+        $('[data-PageSwitch]').PageSwitch();
+    });
+
 })(jQuery);

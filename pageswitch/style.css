@@ -30,35 +30,25 @@ body {
 }
 
 #section0 {
-    background-image: url(images/1.jpg);
+    background-color: yellow;
     color: #fff;
     text-shadow: 1px 1px 1px #333;
 }
 
 #section1 {
-    color: #fff;
-    text-shadow: 1px 1px 1px #333;
-    background-image: url(images/2.jpg);
+    background-color: red;
 }
 
 #section2 {
-    background-image: url(images/3.jpg);
-    color: #fff;
-    text-shadow: 1px 1px 1px #666;
+    background-color: green;
 }
 
 #section3 {
-    color: #008283;
-    background-image: url(images/4.jpg);
-    text-shadow: 1px 1px 1px #fff;
+    background-color: blue;
 }
 
-#section0 p {
-    color: #F1FF00;
-}
-
-#section3 p {
-    color: #00A3AF;
+#section4 {
+    background-color: gray;
 }
 
 .left {

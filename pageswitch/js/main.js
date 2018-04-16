@@ -17,7 +17,6 @@
         function PageSwitch(element, options) {
             this.settings = $.extend(true, $.fn.PageSwitch.defaults, options || {});
             this.element = element;
-
             this.init();
         }
 
@@ -29,6 +28,8 @@
                 me.section = me.element.find(me.selectors.section);
                 me.direction = (me.settings.direction == "vertical" ? true : false);
 
+                me.canScroll = true;
+
                 me.pagesCount = me.pagesCount();
 
                 me.index = (me.settings.index >= 0 && me.settings.index < me.pagesCount) ? me.settings.index : 0;
@@ -39,13 +40,14 @@
                 if (me.settings.pageination) {
                     me._initPaging();
                 }
-
                 me._initEvent();
             },
             _scrollPage: function() {
                 var me = this,
                     dest = me.section.eq(me.index).position();
                 if (!dest) return;
+
+                me.canScroll = false;
                 if (_prefix) {
                     me.sections.css(_prefix + "transition", "all " + me.settings.duration + "ms " + me.settings.easing);
                     var translate = me.direction ? "translateY(-" + dest.top + "px)" : "translateX(-" + dest.left + "px)";
@@ -53,10 +55,17 @@
                 } else {
                     var animateCss = me.direction ? { top: -dest.top } : { left: -dest.left };
                     me.sections.animate(animateCss, me.settings.duration, function() {
+                        me.canScroll = true;
                         if (me.settings.callback && $.type(me.settings.callback) == "function") {
                             me.settings.callback()
                         }
                     });
+                }
+
+                if (me.settings.pageination) {
+                    let pageItem = me.pageItem.eq(me.index)
+                    pageItem.addClass(me.activeClass);
+                    pageItem.siblings("li").removeClass(me.activeClass);
                 }
             },
             prev: function() {
@@ -92,15 +101,17 @@
             },
             _initPaging: function() {
                 var me = this,
-                    pageClass = me.selectors.page.substring(1);
+                    pagesClass = me.selectors.page.substring(1);
                 me.activeClass = me.selectors.active.substring(1);
-                var pageHtml = "<ul class=" + pageClass + ">";
+
+                var pageHtml = "<ul class=" + pagesClass + ">";
                 for (var i = 0; i < me.pagesCount; i++) {
                     pageHtml += "<li></li>";
                 }
                 pageHtml += "</ul>"
                 me.element.append(pageHtml);
-                var pages = $(me.selectors.pages);
+                var pages = me.element.find(me.selectors.page);
+
                 me.pageItem = pages.find("li");
                 me.pageItem.eq(me.index).addClass(me.activeClass);
 
@@ -113,18 +124,21 @@
 
             _initEvent: function() {
                 var me = this;
-                me.element.on("click", me.selectors.pages + " li", function() {
+                me.element.on("click", me.selectors.page + " li", function() {
                     me.index = $(this).index();
+                    console.log("nihao")
                     me._scrollPage()
                 });
 
                 me.element.on("mousewheel DOMMouseScroll", function(e) {
-                    var delta = e.originalEvent.wheelDelta || e.originalEvent.delta;
+                    if (me.canScroll) {
+                        var delta = e.originalEvent.wheelDelta || e.originalEvent.delta;
 
-                    if (delta > 0 && (me.index && !me.settings.loop || me.settings.loop)) {
-                        me.prev();
-                    } else if (delta < 0 && (me.index < (me.pagesCount - 1) && !me.settings.loop || me.settings.loop)) {
-                        me.next();
+                        if (delta > 0 && (me.index && !me.settings.loop || me.settings.loop)) {
+                            me.prev();
+                        } else if (delta < 0 && (me.index < (me.pagesCount - 1) && !me.settings.loop || me.settings.loop)) {
+                            me.next();
+                        }
                     }
                 });
 
@@ -152,7 +166,9 @@
                     }
                 });
 
+                /*支持CSS3动画的浏览器，绑定transitionend事件(即在动画结束后调用起回调函数)*/
                 me.sections.on("transitionend webkitTransitionEnd oTransitionEnd otransitionend", function() {
+                    me.canScroll = true;
                     if (me.settings.callback && $.type(me.settings.callback) == "function") {
                         me.settings.callback()
                     }
@@ -191,7 +207,7 @@
         loop: false, //页面是否可以循环播放
         pageination: true, //是否分页处理
         keyboard: true, //是否触发键盘事件
-        direction: "horizontal", //页面是垂直滑动还是水平滑动
+        direction: "vertical", //页面是垂直滑动还是水平滑动
         callback: "" //回调函数
     };
 
